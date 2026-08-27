@@ -2,6 +2,7 @@ import os
 import sys
 import subprocess
 import logging
+from pathlib import Path  # <-- ДОБАВЛЕНО!
 
 # ========== АВТОМАТИЧЕСКАЯ УСТАНОВКА БИБЛИОТЕК ==========
 def install_packages():
@@ -57,7 +58,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-if not BOT_TOKEN or BOT_TOKEN == "ВАШ_БОТ_ТОКЕН":
+if not BOT_TOKEN or BOT_TOKEN == "ВАШ_ТОКЕН_БОТА":
     raise ValueError("Укажите BOT_TOKEN в файле bot.py!")
 
 TEMP_DIR = Path("temp_files")
