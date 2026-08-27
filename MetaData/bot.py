@@ -57,7 +57,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-if not BOT_TOKEN or BOT_TOKEN == "8868046623:AAHcsCsbXV9Bq16jqjJK-LB3uYWNesTY_K0":
+if not BOT_TOKEN or BOT_TOKEN == "ВАШ_БОТ_ТОКЕН":
     raise ValueError("Укажите BOT_TOKEN в файле bot.py!")
 
 TEMP_DIR = Path("temp_files")
