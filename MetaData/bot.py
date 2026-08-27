@@ -13,7 +13,6 @@ from telegram.ext import (
     filters,
     ContextTypes
 )
-from dotenv import load_dotenv
 from PIL import Image
 from PIL.ExifTags import TAGS, GPSTAGS
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -21,7 +20,16 @@ from apscheduler.triggers.cron import CronTrigger
 
 from database import db
 
-load_dotenv()
+# ========== НАСТРОЙКИ (всё здесь) ==========
+
+# Токен бота (обязательно)
+BOT_TOKEN = "8868046623:AAHcsCsbXV9Bq16jqjJK-LB3uYWNesTY_K0"
+
+# Настройки канала
+CHANNEL_ID = "-1004443036308"  # ID канала
+CHANNEL_INVITE_LINK = "https://t.me/+5slr_856RjtkNmEy"  # Ссылка для подписки
+
+# ==========================================
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -29,12 +37,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-BOT_TOKEN = os.getenv('BOT_TOKEN')
-if not BOT_TOKEN:
-    raise ValueError("BOT_TOKEN не найден в .env файле")
-
-CHANNEL_ID = os.getenv('CHANNEL_ID', '')
-CHANNEL_INVITE_LINK = os.getenv('CHANNEL_INVITE_LINK', '')
+if not BOT_TOKEN or BOT_TOKEN == "ВАШ_ТОКЕН_БОТА":
+    raise ValueError("Укажите BOT_TOKEN в файле bot.py!")
 
 TEMP_DIR = Path("temp_files")
 TEMP_DIR.mkdir(exist_ok=True)
