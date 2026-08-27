@@ -2,7 +2,8 @@ import os
 import sys
 import subprocess
 import logging
-from pathlib import Path  # <-- ДОБАВЛЕНО!
+from pathlib import Path
+from typing import Dict, Any  # <-- ДОБАВЛЕНО!
 
 # ========== АВТОМАТИЧЕСКАЯ УСТАНОВКА БИБЛИОТЕК ==========
 def install_packages():
