@@ -1,9 +1,29 @@
 import os
+import sys
+import subprocess
 import logging
-from pathlib import Path
-from datetime import datetime
-from typing import Dict, Any
 
+# ========== АВТОМАТИЧЕСКАЯ УСТАНОВКА БИБЛИОТЕК ==========
+def install_packages():
+    """Автоматическая установка необходимых библиотек"""
+    packages = [
+        'python-telegram-bot==20.7',
+        'Pillow==10.1.0',
+        'apscheduler==3.10.4'
+    ]
+    
+    for package in packages:
+        try:
+            __import__(package.split('==')[0].replace('-', '_'))
+        except ImportError:
+            print(f"📦 Устанавливаю: {package}")
+            subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+            print(f"✅ {package} установлен")
+
+# Устанавливаем библиотеки перед импортом
+install_packages()
+
+# ========== ТЕПЕРЬ ИМПОРТИРУЕМ ==========
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     Application,
