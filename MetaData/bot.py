@@ -46,14 +46,14 @@ from database import db, DB_PATH  # <-- ДОБАВЛЕНО DB_PATH
 # ========== НАСТРОЙКИ (всё здесь) ==========
 
 # Токен бота (обязательно)
-BOT_TOKEN = "ВАШ_ТОКЕН_БОТА"
+BOT_TOKEN = "8868046623:AAHcsCsbXV9Bq16jqjJK-LB3uYWNesTY_K0"
 
 # Настройки канала
-CHANNEL_ID = "-1001234567890"  # ID канала
-CHANNEL_INVITE_LINK = "https://t.me/joinchat/ваша_ссылка"  # Ссылка для подписки
+CHANNEL_ID = "-1004443036308"  # ID канала
+CHANNEL_INVITE_LINK = "https://t.me/+5slr_856RjtkNmEy"  # Ссылка для подписки
 
 # ID администраторов (кто может выдавать запросы)
-ADMIN_IDS = [123456789, 987654321]  # <-- СЮДА ВАШ ID
+ADMIN_IDS = [7572622307]  # <-- СЮДА ВАШ ID
 
 # ==========================================
 
