@@ -2,8 +2,9 @@ import os
 import sys
 import subprocess
 import logging
+import sqlite3  # <-- ДОБАВЛЕНО
 from pathlib import Path
-from typing import Dict, Any  # <-- ДОБАВЛЕНО!
+from typing import Dict, Any
 
 # ========== АВТОМАТИЧЕСКАЯ УСТАНОВКА БИБЛИОТЕК ==========
 def install_packages():
@@ -40,16 +41,19 @@ from PIL.ExifTags import TAGS, GPSTAGS
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 
-from database import db
+from database import db, DB_PATH  # <-- ДОБАВЛЕНО DB_PATH
 
 # ========== НАСТРОЙКИ (всё здесь) ==========
 
 # Токен бота (обязательно)
-BOT_TOKEN = "8868046623:AAHcsCsbXV9Bq16jqjJK-LB3uYWNesTY_K0"
+BOT_TOKEN = "ВАШ_ТОКЕН_БОТА"
 
 # Настройки канала
-CHANNEL_ID = "-1004443036308"  # ID канала
-CHANNEL_INVITE_LINK = "https://t.me/+5slr_856RjtkNmEy"  # Ссылка для подписки
+CHANNEL_ID = "-1001234567890"  # ID канала
+CHANNEL_INVITE_LINK = "https://t.me/joinchat/ваша_ссылка"  # Ссылка для подписки
+
+# ID администраторов (кто может выдавать запросы)
+ADMIN_IDS = [123456789, 987654321]  # <-- СЮДА ВАШ ID
 
 # ==========================================
 
@@ -610,6 +614,99 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     await update.message.reply_text(text, parse_mode='Markdown')
 
 
+# ========== КОМАНДА ДЛЯ ВЫДАЧИ ЗАПРОСОВ (ТОЛЬКО ДЛЯ АДМИНА) ==========
+async def add_requests_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Команда /add_requests - выдача запросов пользователю (только для админов)"""
+    user_id = update.effective_user.id
+    
+    # Проверяем, является ли пользователь админом
+    if user_id not in ADMIN_IDS:
+        await update.message.reply_text("❌ У вас нет прав для выполнения этой команды!")
+        return
+    
+    # Проверяем аргументы
+    args = context.args
+    if len(args) < 2:
+        await update.message.reply_text(
+            "❌ Использование: `/add_requests @username количество`\n"
+            "Пример: `/add_requests @user123 5`\n\n"
+            "Или по ID: `/add_requests 123456789 5`",
+            parse_mode='Markdown'
+        )
+        return
+    
+    try:
+        # Определяем пользователя и количество
+        target = args[0]
+        amount = int(args[1])
+        
+        if amount <= 0:
+            await update.message.reply_text("❌ Количество должно быть больше 0!")
+            return
+        
+        # Ищем пользователя
+        target_user_id = None
+        target_username = None
+        
+        # Если передан ID
+        if target.isdigit():
+            target_user_id = int(target)
+            user_data = db.get_user(target_user_id)
+            if user_data:
+                target_username = user_data.get('username')
+        else:
+            # Если передан @username
+            username = target.replace('@', '')
+            # Ищем пользователя в базе
+            with sqlite3.connect(DB_PATH) as conn:
+                cursor = conn.cursor()
+                cursor.execute('SELECT user_id, username FROM users WHERE username = ?', (username,))
+                row = cursor.fetchone()
+                if row:
+                    target_user_id = row[0]
+                    target_username = row[1]
+        
+        if not target_user_id:
+            await update.message.reply_text(f"❌ Пользователь {target} не найден в базе данных!")
+            return
+        
+        # Добавляем бонусные запросы
+        with sqlite3.connect(DB_PATH) as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                UPDATE users 
+                SET bonus_requests = bonus_requests + ?
+                WHERE user_id = ?
+            ''', (amount, target_user_id))
+            conn.commit()
+        
+        # Отправляем уведомление пользователю
+        try:
+            await context.bot.send_message(
+                chat_id=target_user_id,
+                text=f"🎁 **Вам начислено {amount} бонусных запросов!**\n\n"
+                     f"📊 Теперь у вас доступно больше запросов!\n"
+                     f"Используйте /stats для проверки.",
+                parse_mode='Markdown'
+            )
+        except:
+            pass
+        
+        # Отправляем подтверждение админу
+        await update.message.reply_text(
+            f"✅ **Запросы выданы!**\n\n"
+            f"👤 Пользователь: @{target_username or target_user_id}\n"
+            f"📊 Добавлено: `{amount}` запросов\n"
+            f"💬 Уведомление отправлено!",
+            parse_mode='Markdown'
+        )
+        
+    except ValueError:
+        await update.message.reply_text("❌ Количество должно быть числом!\nПример: `/add_requests @user 5`", parse_mode='Markdown')
+    except Exception as e:
+        await update.message.reply_text(f"❌ Ошибка: {str(e)[:100]}")
+
+
 async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Обработка нажатий на кнопки"""
     query = update.callback_query
@@ -766,17 +863,22 @@ def main() -> None:
     """Запуск бота"""
     application = Application.builder().token(BOT_TOKEN).post_init(post_init).build()
     
+    # Команды
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("help", help_command))
     application.add_handler(CommandHandler("about", about_command))
     application.add_handler(CommandHandler("stats", stats_command))
     application.add_handler(CommandHandler("referral", referral_command))
+    application.add_handler(CommandHandler("add_requests", add_requests_command))  # <-- ДОБАВЛЕНО
     
+    # Кнопки
     application.add_handler(CallbackQueryHandler(button_callback))
     
+    # Файлы
     application.add_handler(MessageHandler(filters.Document.ALL, handle_file))
     application.add_handler(MessageHandler(filters.PHOTO, photo_handler))
     
+    # Ошибки
     application.add_error_handler(error_handler)
     
     print("🤖 Бот запущен с подпиской и рефералами!")
@@ -784,6 +886,7 @@ def main() -> None:
     print(f"📢 ID канала: {CHANNEL_ID or 'Не настроен'}")
     print(f"📊 Лимит: 5 запросов в день")
     print(f"🔄 Сброс в 00:00")
+    print(f"👑 Админы: {ADMIN_IDS}")
     print("=" * 50)
     
     application.run_polling(allowed_updates=Update.ALL_TYPES)
